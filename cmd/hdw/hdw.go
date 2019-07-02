@@ -16,17 +16,19 @@ func usage() {
 	fmt.Println("Creates HD wallet accounts using a random mnemonic, or, when set, using the given '--mnemonic' value")
 	flag.PrintDefaults()
 	fmt.Println("\n  example")
-	fmt.Println(`    % ./hdgenerator --coin 175 --password "secret"`)
-	fmt.Println(`    % ./hdgenerator --coin 175 --password "secret" --change 0 --index 0`)
+	fmt.Println(`    % ./hdw --coin 175 --password "secret"`)
+	fmt.Println(`    % ./hdw --coin 175 --mnemonic "wire own magic faint cabin ranch palm property tourist riot clarify tomorrow cruise open symptom"	`)
+	fmt.Println(`    % ./hdw --coin 175 --kms-resource-id "projects/tw-cu-local-v2/locations/us/keyRings/ravencoin-transfers-service/cryptoKeys/private-keys"`)
+
 }
 
 func main() {
 	password := flag.String("password", "", "The password used for the BIP-39 seed")
-	mnemonicInput := flag.String("mnemonic", "", "A BIP-39 mnemonic to use, or a randomly generated one when not set")
-	coin := flag.Int("coin", 0, "Coin type used in derivation path")
-	account := flag.Int("account", 0, "Account to use for derivation")
-	kmsResourceID := flag.String("kms-resource-id", "", "kms resource used to encrypt key data")
-	kmsVersionID := flag.Int("kms-key-version", 1, "The version of the key to use")
+	mnemonicInput := flag.String("mnemonic", "", "A BIP-39 mnemonic to use, or a randomly generated one when n	ot set")
+	coin := flag.Int("coin", 0, "Coin type used in derivation path, default 0")
+	account := flag.Int("account", 0, "Account to use for derivation, default 0")
+	kmsResourceID := flag.String("kms-resource-id", "", "kms resource used to encrypt key data, if not passed, will print raw data")
+	kmsVersionID := flag.Int("kms-key-version", 1, "The version of the key to use, default 1 (used on ly if kms-resource-id is passed)")
 	flag.Parse()
 	if *coin < 0 {
 		fmt.Println("Coin must be greater than zero")

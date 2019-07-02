@@ -52,7 +52,7 @@ func main() {
 	acc := mnemonic.GenerateSeed(*password).
 		GenerateMasterKey(hdw.NetworkParams(*coin)).
 		Account(uint32(*coin), uint32(*account))
-	print(acc, *kmsResourceID, *kmsVersionID)
+	print(acc, *kmsResourceID, *kmsVersionID, printMnemonic)
 }
 
 func print(account hdw.Account, kmsResourceID string, kmsVersion int, printMnemonic bool) {

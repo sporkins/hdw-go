@@ -69,6 +69,6 @@ func print(account hdw.Account, kmsResourceID string, kmsVersion int, printMnemo
 	account.PrintDerived(0, 10)
 
 	if printMnemonic {
-		println(fmt.Sprintf("mnemonic:\t%s", account.Mnemonic))
+		println(fmt.Sprintf("mnemonic:\t%s", account.Mnemonic()))
 	}
 }

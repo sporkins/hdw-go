@@ -102,6 +102,11 @@ func (a Account) AccountSK() string {
 	return a.accountKey.String()
 }
 
+//Mnemonic return the mnemonic for this account
+func (a Account) Mnemonic() string {
+	return a.masterKey.mnemonic
+}
+
 //AccountJSON convert to JSON
 func (a Account) AccountJSON() []byte {
 	acctPk, err := a.accountKey.Neuter()

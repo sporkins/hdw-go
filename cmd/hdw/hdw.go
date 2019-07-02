@@ -29,6 +29,7 @@ func main() {
 	account := flag.Int("account", 0, "Account to use for derivation, default 0")
 	kmsResourceID := flag.String("kms-resource-id", "", "kms resource used to encrypt key data, if not passed, will print raw data")
 	kmsVersionID := flag.Int("kms-key-version", 1, "The version of the key to use, default 1 (used on ly if kms-resource-id is passed)")
+	printMnemonic := flag.Bool("print-mnemonic", true, "Boolean that controls if the mnemonic will be printed or not")
 	flag.Parse()
 	if *coin < 0 {
 		fmt.Println("Coin must be greater than zero")
@@ -54,7 +55,7 @@ func main() {
 	print(acc, *kmsResourceID, *kmsVersionID)
 }
 
-func print(account hdw.Account, kmsResourceID string, kmsVersion int) {
+func print(account hdw.Account, kmsResourceID string, kmsVersion int, printMnemonic bool) {
 	accountJSON := account.AccountJSON()
 
 	if kmsResourceID == "" {
@@ -67,4 +68,7 @@ func print(account hdw.Account, kmsResourceID string, kmsVersion int) {
 
 	account.PrintDerived(0, 10)
 
+	if printMnemonic {
+		println(fmt.Sprintf("mnemonic:\t%s", account.Mnemonic))
+	}
 }

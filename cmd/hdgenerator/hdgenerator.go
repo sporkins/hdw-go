@@ -27,11 +27,6 @@ func main() {
 	account := flag.Int("account", 0, "Account to use for derivation")
 	network := flag.String("network", "mainnet", "chain network to use, either mainnet or testnet")
 	flag.Parse()
-	if *password == "" && *mnemonicInput == "" {
-		fmt.Println("Password is required when a mnemonic is not specified")
-		usage()
-		os.Exit(1)
-	}
 	if *coin < 0 {
 		fmt.Println("Coin must be greater than zero")
 		usage()
@@ -65,6 +60,8 @@ func print(account hdw.Account, kmsResourceID string, kmsVersion int) {
 	kmsClient := kms.NewKMSClient(fmt.Sprintf("%s/cryptoKeyVersions/%d", kmsResourceID, kmsVersion))
 
 	accountJSON := account.AccountJSON()
+
+	println(string(accountJSON))
 
 	encryptdAccountJSON := kmsClient.Encrypt(accountJSON)
 	encryptedAccountSK := kmsClient.Encrypt([]byte(account.AccountSK()))

@@ -25,7 +25,6 @@ func main() {
 	mnemonicInput := flag.String("mnemonic", "", "A BIP-39 mnemonic to use, or a randomly generated one when not set")
 	coin := flag.Int("coin", 0, "Coin type used in derivation path")
 	account := flag.Int("account", 0, "Account to use for derivation")
-	network := flag.String("network", "mainnet", "chain network to use, either mainnet or testnet")
 	kmsResourceID := flag.String("kms-resource-id", "", "kms resource used to encrypt key data")
 	kmsVersionID := flag.Int("kms-key-version", 1, "The version of the key to use")
 	flag.Parse()
@@ -39,11 +38,6 @@ func main() {
 		usage()
 		os.Exit(1)
 	}
-	if !hdw.Networks[*network] {
-		fmt.Println("network must be either mainnet or testnet")
-		usage()
-		os.Exit(1)
-	}
 
 	var mnemonic hdw.Mnemonic
 	if *mnemonicInput == "" {
@@ -53,7 +47,7 @@ func main() {
 	}
 
 	acc := mnemonic.GenerateSeed(*password).
-		GenerateMasterKey(hdw.NetworkParams(*coin, *network)).
+		GenerateMasterKey(hdw.NetworkParams(*coin)).
 		Account(uint32(*coin), uint32(*account))
 	print(acc, *kmsResourceID, *kmsVersionID)
 }

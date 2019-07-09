@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/GoKillers/libsodium-go/cryptobox"
+
 	hdw "github.com/sporkins/hdw-go"
 	kms "github.com/sporkins/kms-go"
 )
@@ -19,7 +21,6 @@ func usage() {
 	fmt.Println(`    % ./hdw --coin 175 --password "secret"`)
 	fmt.Println(`    % ./hdw --coin 175 --mnemonic "wire own magic faint cabin ranch palm property tourist riot clarify tomorrow cruise open symptom"	`)
 	fmt.Println(`    % ./hdw --coin 175 --kms-resource-id "projects/tw-cu-local-v2/locations/us/keyRings/ravencoin-transfers-service/cryptoKeys/private-keys"`)
-
 }
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 	kmsResourceID := flag.String("kms-resource-id", "", "kms resource used to encrypt key data, if not passed, will print raw data")
 	kmsVersionID := flag.Int("kms-key-version", 1, "The version of the key to use, default 1 (used on ly if kms-resource-id is passed)")
 	printMnemonic := flag.Bool("print-mnemonic", false, "Boolean that controls if the mnemonic will be printed or not")
+	boxSealPkBase64 := flag.String("mnemonic-box-pk-b64", "", "Cryptobox public key to encrypt mnemonic")
+
 	flag.Parse()
 	if *coin < 0 {
 		fmt.Println("Coin must be greater than zero")
@@ -52,10 +55,10 @@ func main() {
 	acc := mnemonic.GenerateSeed(*password).
 		GenerateMasterKey(hdw.NetworkParams(*coin)).
 		Account(uint32(*coin), uint32(*account))
-	print(acc, *kmsResourceID, *kmsVersionID, *printMnemonic)
+	print(acc, *kmsResourceID, *kmsVersionID, *printMnemonic, *boxSealPkBase64)
 }
 
-func print(account hdw.Account, kmsResourceID string, kmsVersion int, printMnemonic bool) {
+func print(account hdw.Account, kmsResourceID string, kmsVersion int, printMnemonic bool, boxSealPkBase64 string) {
 	accountJSON := account.AccountJSON()
 
 	if kmsResourceID == "" {
@@ -69,6 +72,14 @@ func print(account hdw.Account, kmsResourceID string, kmsVersion int, printMnemo
 	account.PrintDerived(0, 10)
 
 	if printMnemonic {
-		println(fmt.Sprintf("mnemonic:\t%s", account.Mnemonic()))
+		var mnemonic = account.Mnemonic()
+		if boxSealPkBase64 != "" {
+			c, exit := cryptobox.CryptoBoxSeal([]byte(mnemonic), rawStdEncoding.DecodeString(boxSealPkBase64))
+			if exit != 0 {
+				t.Fatalf("CryptoBoxSeal failed: %v", exit)
+			}
+			mnemonic = rawStdEncoding.EncodeToString(c)
+		}
+		println(fmt.Sprintf("mnemonic:\t%s", mnemonic))
 	}
 }

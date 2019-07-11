@@ -33,12 +33,3 @@ type AccountJSON struct {
 	AccountSK string `json:"accountsk"`
 	AccountPK string `json:"accountpk"`
 }
-
-//QRData QR Data
-type QRData struct {
-	Type                       string `json:"type"`
-	DistributorPublicKeyBase64 string `json:"distributorPublicKeyBase64"`
-	CipherTextBase64           string `json:"cipherTextBase64"`
-	Key                        string `json:"key"`
-	Name                       string `json:"name"`
-}

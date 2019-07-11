@@ -14,16 +14,16 @@ import (
 const derivationPath = "m/44'/%d'/0'/0/%d"
 
 //GenerateFromMnemonic generate account from mnenomicInput for account and coin
-func GenerateFromMnemonic(mnemonicInput string, account int, coin int) Account {
+func GenerateFromMnemonic(password string, mnemonicInput string, account int, coin int) Account {
 	mnemonic := fromMnemonic(mnemonicInput)
 	seed := bip39.NewSeed(mnemonic, "")
 	return generateAccount(mnemonic, seed, NetworkParams(coin), uint32(account))
 }
 
 //Generate generate account with random mnemonic for account and coin
-func Generate(account int, coin int) Account {
+func Generate(password string, account int, coin int) Account {
 	mnemonic := generateMnemonic()
-	seed := bip39.NewSeed(mnemonic, "")
+	seed := bip39.NewSeed(mnemonic, password)
 	return generateAccount(mnemonic, seed, NetworkParams(coin), uint32(account))
 }
 

@@ -9,7 +9,7 @@ import (
 	hdw "github.com/sporkins/hdw-go"
 )
 
-var rawStdEncoding = base64.StdEncoding.WithPadding(base64.NoPadding)
+var rawStdEncoding = base64.StdEncoding
 
 func usage() {
 	fmt.Println("Creates HD wallet accounts using a random mnemonic, or, when set, using the given '--mnemonic' value")
@@ -23,6 +23,7 @@ func main() {
 	mnemonicInput := flag.String("mnemonic", "", "A BIP-39 mnemonic to use, or a randomly generated one when n	ot set")
 	coin := flag.Int("coin", 0, "Coin type used in derivation path, default 0")
 	account := flag.Int("account", 0, "Account to use for derivation, default 0")
+	password := flag.String("password", "", "password to use when generating seed")
 
 	flag.Parse()
 	if *coin < 0 {
@@ -37,9 +38,9 @@ func main() {
 	}
 	var acc hdw.Account
 	if *mnemonicInput == "" {
-		acc = hdw.Generate(*account, *coin)
+		acc = hdw.Generate(*password, *account, *coin)
 	} else {
-		acc = hdw.GenerateFromMnemonic(*mnemonicInput, *account, *coin)
+		acc = hdw.GenerateFromMnemonic(*password, *mnemonicInput, *account, *coin)
 	}
 
 	println(string(hdw.JSON(acc.AccountJSON())))

@@ -17,7 +17,7 @@ import (
 	kms "github.com/sporkins/kms-go"
 )
 
-var rawStdEncoding = base64.StdEncoding.WithPadding(base64.NoPadding)
+var rawStdEncoding = base64.StdEncoding
 
 func usage() {
 	fmt.Println("Creates HD wallet accounts using a random mnemonic, or, when set, using the given '--mnemonic' value")
@@ -54,9 +54,9 @@ func main() {
 	}
 	var acc hdw.Account
 	if *mnemonicInput == "" {
-		acc = hdw.Generate(*account, *coin)
+		acc = hdw.Generate("", *account, *coin)
 	} else {
-		acc = hdw.GenerateFromMnemonic(*mnemonicInput, *account, *coin)
+		acc = hdw.GenerateFromMnemonic("", *mnemonicInput, *account, *coin)
 	}
 
 	kmsEncData := kmsEncrypt(acc, *kmsResourceID, *kmsVersionID)
@@ -66,7 +66,7 @@ func main() {
 		fmt.Printf("\nKMS encrypted key data:\n\n%s\n", kmsEncData)
 	}
 	if boxSealEncData != "" {
-		qrData := hdw.JSON(hdw.QRData{
+		qrData := hdw.JSON(QRData{
 			Type:                       "asset",
 			CipherTextBase64:           boxSealEncData,
 			DistributorPublicKeyBase64: *boxPkBase64,
@@ -130,7 +130,7 @@ func writeQR(title string, content string) string {
 	t := time.Now().Unix()
 	qrFileName := fmt.Sprintf("%d_qr.pdf", t)
 
-	qrBytes, _ := qr.Encode(content, qr.Highest, 256)
+	qrBytes, _ := qr.Encode(content, qr.Low, 300)
 	rdr = bytes.NewReader(qrBytes)
 
 	qrPdf := pdf.New("P", "pt", "letter", "")
@@ -141,7 +141,16 @@ func writeQR(title string, content string) string {
 	qrPdf.Write(lineH, title)
 	qrPdf.Ln(35)
 	qrPdf.RegisterImageOptionsReader("qr", pdf.ImageOptions{ImageType: "png", ReadDpi: false}, rdr)
-	qrPdf.ImageOptions("qr", 0, 0, 256, 256, true, pdf.ImageOptions{ImageType: "png", ReadDpi: false}, 0, "")
+	qrPdf.ImageOptions("qr", 30, 0, 300, 300, true, pdf.ImageOptions{ImageType: "png", ReadDpi: false}, 0, "")
 	qrPdf.OutputFileAndClose(qrFileName)
 	return qrFileName
+}
+
+//QRData QR Data
+type QRData struct {
+	Type                       string `json:"type"`
+	DistributorPublicKeyBase64 string `json:"distributorPublicKeyBase64"`
+	CipherTextBase64           string `json:"cipherTextBase64"`
+	Key                        string `json:"key"`
+	Name                       string `json:"name"`
 }

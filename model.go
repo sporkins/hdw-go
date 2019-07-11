@@ -5,43 +5,24 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 )
 
-//Mnemonic bip39 mnemonic
-type Mnemonic struct {
-	mnemonic string
-	entropy  []byte
-}
-
-//Seed seed from mnemonic
-type Seed struct {
-	mnemonic string
-	entropy  []byte
-	seed     []byte
-}
-
-//MasterKey master key
-type MasterKey struct {
-	mnemonic  string
-	entropy   []byte
-	seed      []byte
-	masterKey *hdkeychain.ExtendedKey
-	net       *chaincfg.Params
-}
-
-type ChildKey struct {
-	childKey *hdkeychain.ExtendedKey
-}
-
+//Account account
 type Account struct {
-	masterKey  MasterKey
-	accountKey *hdkeychain.ExtendedKey
-	coin       int
-	account    int
+	Mnemonic   string
+	Seed       []byte
+	MasterKey  *hdkeychain.ExtendedKey
+	AccountKey *hdkeychain.ExtendedKey
+	Coin       uint32
+	Account    uint32
+	Net        *chaincfg.Params
 }
 
+//DerivedKey derived key
 type DerivedKey struct {
-	account Account
-	address string
-	derived *hdkeychain.ExtendedKey
+	Account Account
+	Change  uint32
+	Index   uint32
+	Address string
+	Derived *hdkeychain.ExtendedKey
 }
 
 //AccountJSON json of data
@@ -51,4 +32,13 @@ type AccountJSON struct {
 	RootSK    string `json:"rootsk"`
 	AccountSK string `json:"accountsk"`
 	AccountPK string `json:"accountpk"`
+}
+
+//QRData QR Data
+type QRData struct {
+	Type                       string `json:"type"`
+	DistributorPublicKeyBase64 string `json:"distributorPublicKeyBase64"`
+	CipherTextBase64           string `json:"cipherTextBase64"`
+	Key                        string `json:"key"`
+	Name                       string `json:"name"`
 }

@@ -13,121 +13,106 @@ import (
 
 const derivationPath = "m/44'/%d'/0'/0/%d"
 
-//GenerateMnemonic generates mnemonic
-func GenerateMnemonic() Mnemonic {
+//GenerateFromMnemonic generate account from mnenomicInput for account and coin
+func GenerateFromMnemonic(mnemonicInput string, account int, coin int) Account {
+	mnemonic := fromMnemonic(mnemonicInput)
+	seed := bip39.NewSeed(mnemonic, "")
+	return generateAccount(mnemonic, seed, NetworkParams(coin), uint32(account))
+}
+
+//Generate generate account with random mnemonic for account and coin
+func Generate(account int, coin int) Account {
+	mnemonic := generateMnemonic()
+	seed := bip39.NewSeed(mnemonic, "")
+	return generateAccount(mnemonic, seed, NetworkParams(coin), uint32(account))
+}
+
+func generateMnemonic() string {
 	var mnemonic string
 	entropy, err := bip39.NewEntropy(256)
 	checkError(err, "Error generating entropy")
 	mnemonic, err = bip39.NewMnemonic(entropy)
 	checkError(err, "Error generating mnemonic")
-	return Mnemonic{mnemonic, entropy}
+	return mnemonic
 }
 
-//FromMnemonic generates mnemonic
-func FromMnemonic(mnemonic string) Mnemonic {
-	entropy, err := bip39.EntropyFromMnemonic(mnemonic)
+func fromMnemonic(mnemonic string) string {
+	_, err := bip39.EntropyFromMnemonic(mnemonic)
 	checkError(err, "Error generating entropy")
-	return Mnemonic{mnemonic, entropy}
+	return mnemonic
 }
 
-//GenerateSeed generate sedd from password
-func (m Mnemonic) GenerateSeed(password string) Seed {
-	seed := bip39.NewSeed(m.mnemonic, password)
-	return Seed{m.mnemonic, m.entropy, seed}
-}
+//GenerateAccount generate account
+func generateAccount(mnemonic string, seed []byte, network *chaincfg.Params, account uint32) Account {
+	var key *hdkeychain.ExtendedKey
+	masterKey, _ := hdkeychain.NewMaster(seed, network)
+	key, _ = masterKey.Child(hdkeychain.HardenedKeyStart + 44)
+	key, _ = key.Child(hdkeychain.HardenedKeyStart + network.HDCoinType)
+	key, _ = key.Child(hdkeychain.HardenedKeyStart + account)
 
-//GenerateMasterKey for network
-func (s Seed) GenerateMasterKey(network *chaincfg.Params) MasterKey {
-	masterKey, err := hdkeychain.NewMaster(s.seed, network)
-	checkError(err, "Error getting master key")
-	return MasterKey{s.mnemonic, s.entropy, s.seed, masterKey, network}
-}
-
-//ChildH childH
-func (m MasterKey) ChildH(i uint32) ChildKey {
-	acc, err := m.masterKey.Child(hdkeychain.HardenedKeyStart + i)
-	checkError(err, fmt.Sprintf("error i %d", i))
-	return ChildKey{acc}
-}
-
-//ChildH childH
-func (m ChildKey) ChildH(i uint32) ChildKey {
-	acc, err := m.childKey.Child(hdkeychain.HardenedKeyStart + i)
-	checkError(err, fmt.Sprintf("error i %d", i))
-	return ChildKey{acc}
-}
-
-//Child child
-func (a Account) Child(i uint32) DerivedKey {
-	key, err := a.accountKey.Child(i)
-	checkError(err, fmt.Sprintf("error i %d", i))
-	address, err := key.Address(a.masterKey.net)
-	checkError(err, "error generating address from derived key")
-	return DerivedKey{a, address.String(), key}
-}
-
-//Child child
-func (d DerivedKey) Child(i uint32) DerivedKey {
-	key, err := d.derived.Child(i)
-	checkError(err, fmt.Sprintf("error i %d", i))
-	address, err := key.Address(d.account.masterKey.net)
-	checkError(err, "error generating address from derived key")
-	return DerivedKey{d.account, address.String(), key}
-}
-
-//Account account
-func (m MasterKey) Account(coin uint32, account uint32) Account {
-	acc := m.ChildH(44).
-		ChildH(coin).
-		ChildH(account)
-	return Account{m, acc.childKey, int(coin), int(account)}
+	return Account{
+		Mnemonic:   mnemonic,
+		Seed:       seed,
+		MasterKey:  masterKey,
+		AccountKey: key,
+		Coin:       network.HDCoinType,
+		Net:        network,
+	}
 }
 
 //Derive derive change/index path
 func (a Account) Derive(change uint32, index uint32) DerivedKey {
-	dk := a.Child(change).
-		Child(index)
-	return dk
+	changeKey, _ := a.AccountKey.Child(change)
+	indexKey, _ := changeKey.Child(index)
+	address, _ := indexKey.Address(a.Net)
+	return DerivedKey{
+		Account: a,
+		Change:  change,
+		Index:   index,
+		Address: address.String(),
+		Derived: indexKey,
+	}
 }
 
 //AccountPK return the account extended public key
 func (a Account) AccountPK() string {
-	acctPk, err := a.accountKey.Neuter()
+	acctPk, err := a.AccountKey.Neuter()
 	checkError(err, "error neutering account")
 	return acctPk.String()
 }
 
 //AccountSK return the account extended private key
 func (a Account) AccountSK() string {
-	return a.accountKey.String()
-}
-
-//Mnemonic return the mnemonic for this account
-func (a Account) Mnemonic() string {
-	return a.masterKey.mnemonic
+	return a.AccountKey.String()
 }
 
 //AccountJSON convert to JSON
-func (a Account) AccountJSON() []byte {
-	acctPk, err := a.accountKey.Neuter()
+func (a Account) AccountJSON() AccountJSON {
+	acctPk, err := a.AccountKey.Neuter()
 	checkError(err, "error neutering account")
 	account := AccountJSON{
-		Mnemonic:  a.masterKey.mnemonic,
-		Seed:      hex.EncodeToString(a.masterKey.seed),
-		RootSK:    a.masterKey.masterKey.String(),
+		Mnemonic:  a.Mnemonic,
+		Seed:      hex.EncodeToString(a.Seed),
+		RootSK:    a.MasterKey.String(),
 		AccountPK: acctPk.String(),
 		AccountSK: a.AccountSK(),
 	}
-	acctJSON, err := json.MarshalIndent(account, "", " ")
+	return account
+}
+
+//JSON convert to JSON
+func JSON(k interface{}) []byte {
+	JSON, err := json.MarshalIndent(k, "", " ")
 	checkError(err, "error marshalling json")
-	return acctJSON
+	return JSON
 }
 
 //PrintDerived derive accounts
 func (a Account) PrintDerived(change uint32, count int) {
+	println("\nAddresses:")
 	for i := 0; i < count; i++ {
 		var d = a.Derive(uint32(change), uint32(i))
-		println(fmt.Sprintf("m/44'/%d'/%d'/%d/%d\t%s", a.coin, a.account, int(change), i, d.address))
+		println(fmt.Sprintf("\tm/44'/%d'/%d'/%d/%d\t%s", a.Coin, a.Account, change, i, d.Address))
 	}
 }
 
